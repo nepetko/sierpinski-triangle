@@ -1,64 +1,73 @@
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Toolkit;
 import java.util.Random;
 import javax.swing.JFrame;
 
 public class MainPanel extends JFrame {
 
-  Random rand = new Random();
-  PointObject pointA = new PointObject(10, 50, 0);
-  PointObject pointB = new PointObject(1000, 50, 1);
-  PointObject pointC = new PointObject((970 - 10) / 2, 970, 2);
-  PointObject currentSeed = new PointObject(rand.nextInt(970), rand.nextInt(970), 3);
+  private static final long serialVersionUID = 1L;
+  private static final String PANEL_TITLE = "Sierpiński triangle";
+  private static final int PIXEL_SIZE_FOR_DOT = 1;
 
-  public MainPanel() {
-    super("Sierpinski Triangle");
+  private final int screenWidth = (int) Toolkit.getDefaultToolkit().getScreenSize().getWidth();
+  private final int screenHeight = (int) Toolkit.getDefaultToolkit().getScreenSize().getHeight();
 
-    setSize(1000, 1000);
+  private final Random randomGenerator = new Random();
+
+  private final PointWithId pointA = new PointWithId(0, 0, 0);
+  private final PointWithId pointB = new PointWithId(screenWidth, 0, 1);
+  private final PointWithId pointC = new PointWithId(screenWidth / 2, screenHeight, 2);
+  private PointWithId currentSeed = new PointWithId(randomGenerator.nextInt(screenWidth),
+      randomGenerator.nextInt(screenHeight), 3);
+
+  MainPanel() {
+    super(PANEL_TITLE);
+
+    setSize(screenWidth, screenHeight);
+
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     setLocationRelativeTo(null);
   }
 
 
-  public void paint(Graphics g) {
-    super.paint(g);
-    drawInitialPoints(g);
-    generateNewSeedPoints(g);
-  }
-
-  void drawInitialPoints(Graphics g) {
-    Graphics2D graphics2d = (Graphics2D) g;
-
-    graphics2d.drawOval(pointA.getX(), pointA.getY(), 1, 1);
-    graphics2d.drawOval(pointB.getX(), pointB.getY(), 1, 1);
-    graphics2d.drawOval(pointC.getX(), pointC.getY(), 1, 1);
-    graphics2d.drawOval(currentSeed.getX(), currentSeed.getY(), 1, 1);
-  }
-
-
-  void generateNewSeedPoints(Graphics g) {
-    Graphics2D graphics2d = (Graphics2D) g;
-    int nextIdNumber;
-
-    for (int i = 0; i < 1000000; i++) {
-      nextIdNumber = rand.nextInt(3);
-      PointObject pointToApproach = getPointById(nextIdNumber);
-      int nextSeedX = calculateNextSeedX(currentSeed, pointToApproach);
-      int nextSeedY = calculateNextSeedY(currentSeed, pointToApproach);
-      currentSeed = new PointObject(nextSeedX, nextSeedY, 3);
-      graphics2d.drawOval(currentSeed.getX(), currentSeed.getY(), 1, 1);
+  @Override
+  public void paint(final Graphics g) {
+    try {
+      generateNewSeedPoints(g);
+    } catch (final InterruptedException e) {
+      e.printStackTrace();
     }
   }
 
-  private int calculateNextSeedX(PointObject currentSeed, PointObject pointToApproach) {
-    return Math.abs((currentSeed.getX() - pointToApproach.getX())) / 2;
+
+  private void generateNewSeedPoints(final Graphics g) throws InterruptedException {
+    final Graphics2D graphics2d = (Graphics2D) g;
+    int nextIdNumber;
+
+    for (int i = 0; i < 1000000; i++) {
+      if (i % 10 == 0) {
+        Thread.sleep(1);
+      }
+      nextIdNumber = randomGenerator.nextInt(3);
+      final PointWithId pointToApproach = getPointById(nextIdNumber);
+      final int nextSeedX = calculateNextSeedX(currentSeed, pointToApproach);
+      final int nextSeedY = calculateNextSeedY(currentSeed, pointToApproach);
+      currentSeed = new PointWithId(nextSeedX, nextSeedY, 3);
+      graphics2d.drawOval(currentSeed.getX(), currentSeed.getY(), PIXEL_SIZE_FOR_DOT,
+          PIXEL_SIZE_FOR_DOT);
+    }
   }
 
-  private int calculateNextSeedY(PointObject currentSeed, PointObject pointToApproach) {
-    return Math.abs((currentSeed.getY() - pointToApproach.getY())) / 2;
+  private int calculateNextSeedX(final PointWithId currentSeed, final PointWithId pointToApproach) {
+    return (currentSeed.getX() + pointToApproach.getX()) / 2;
   }
 
-  PointObject getPointById(int id) {
+  private int calculateNextSeedY(final PointWithId currentSeed, final PointWithId pointToApproach) {
+    return (currentSeed.getY() + pointToApproach.getY()) / 2;
+  }
+
+  private PointWithId getPointById(final int id) {
     if (id == 0) {
       return pointA;
     } else if (id == 1) {
@@ -66,7 +75,7 @@ public class MainPanel extends JFrame {
     } else if (id == 2) {
       return pointC;
     } else {
-      return null;
+      throw new UnsupportedOperationException("Unsupported id!");
     }
   }
 }
